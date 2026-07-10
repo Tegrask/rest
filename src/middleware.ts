@@ -6,7 +6,7 @@ const SESSION_COOKIE = "session";
 const secret = new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-at-least-32-characters-long");
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/orders/:path*", "/api/tables/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/orders/:path*", "/api/tables/:path*", "/kitchen"],
 };
 
 export async function middleware(request: NextRequest) {
@@ -15,6 +15,11 @@ export async function middleware(request: NextRequest) {
 
   // Guests must be able to place orders
   if (pathname === "/api/orders" && method === "POST") {
+    return NextResponse.next();
+  }
+
+  // The login page must be reachable without a session
+  if (pathname === "/admin/login") {
     return NextResponse.next();
   }
 
