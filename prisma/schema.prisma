@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("STAFF")
+  password  String?  // local fallback hash (not used for Nxcode OAuth)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Table {
+  id        String   @id @default(cuid())
+  number    Int      @unique
+  name      String?
+  qrCode    String?
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  sortOrder Int        @default(0)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Int // cents
+  imageUrl    String?
+  available   Boolean     @default(true)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id            String       @id @default(cuid())
+  tableId       String
+  table         Table        @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  status        String       @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
+  paymentStatus String       @default("PENDING") // PENDING, PAID, FAILED
+  paymentMethod String?      // CASH, NXCODE
+  total         Int          @default(0) // cents
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  items         OrderItem[]
+  payments      Payment[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String   // snapshot
+  price      Int      // cents
+  quantity   Int
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String   @default("NXCODE")
+  amount        Int
+  status        String   @default("PENDING") // PENDING, PAID, FAILED
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
